@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "act"
+version = "0.1.0"
+description = "Standalone Action Chunking Transformer (ACT) policy — ported from HF LeRobot, decoupled to pure PyTorch for reuse across robots."
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "einops>=0.7",
+    "numpy>=1.24",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["act*"]

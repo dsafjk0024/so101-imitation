@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>so101-ros 실무 가이드 — 수집부터 ACT 학습까지</title>
+<style>
+/* so101-ros 팀 가이드 — 단일 파일. 외부 폰트·에셋 없음(오프라인·인쇄 가능). */
+:root {
+  --ink: #14110c; --ink-soft: #5a544a; --ink-faint: #8a8377;
+  --paper: #fffdf8; --paper-sunk: #f5f1e8; --rule: #ddd6c7;
+  --accent: #8a3d17; --accent-soft: #f0e2d6;
+  --ok: #2f6b3a; --no: #9a2c22;
+  --measure: 40rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8e2d6; --ink-soft: #a9a293; --ink-faint: #7c7568;
+    --paper: #16150f; --paper-sunk: #1f1d16; --rule: #3a362c;
+    --accent: #e08a54; --accent-soft: #2e2419;
+    --ok: #7fc08c; --no: #e08b80;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #e8e2d6; --ink-soft: #a9a293; --ink-faint: #7c7568;
+  --paper: #16150f; --paper-sunk: #1f1d16; --rule: #3a362c;
+  --accent: #e08a54; --accent-soft: #2e2419; --ok: #7fc08c; --no: #e08b80;
+}
+:root[data-theme="light"] {
+  --ink: #14110c; --ink-soft: #5a544a; --ink-faint: #8a8377;
+  --paper: #fffdf8; --paper-sunk: #f5f1e8; --rule: #ddd6c7;
+  --accent: #8a3d17; --accent-soft: #f0e2d6; --ok: #2f6b3a; --no: #9a2c22;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0 auto; padding: 3.5rem 2rem 8rem; max-width: 60rem;
+  background: var(--paper); color: var(--ink);
+  font-family: Georgia, "Iowan Old Style", "Noto Serif KR", "Nanum Myeongjo", serif;
+  font-size: 1.0625rem; line-height: 1.62; -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, .kicker { font-weight: 600; line-height: 1.25; }
+.kicker {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 0.75rem;
+}
+h1 { font-size: 2.1rem; margin: 0 0 0.5rem; max-width: var(--measure); }
+h2 {
+  font-size: 1.32rem; margin: 3.4rem 0 1rem; padding-top: 0.9rem;
+  border-top: 1px solid var(--rule); max-width: var(--measure);
+  scroll-margin-top: 1rem;
+}
+h2 .step {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem; letter-spacing: 0.1em; color: var(--accent);
+  display: block; text-transform: uppercase; margin-bottom: 0.3rem;
+}
+h3 { font-size: 1.05rem; margin: 2rem 0 0.6rem; max-width: var(--measure); }
+p, ul, ol, blockquote { max-width: var(--measure); }
+p { margin: 0 0 1.1rem; }
+li { margin-bottom: 0.4rem; }
+.subtitle {
+  font-size: 1.15rem; color: var(--ink-soft); font-style: italic;
+  margin: 0 0 2rem; max-width: var(--measure);
+}
+.meta {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem; color: var(--ink-faint); letter-spacing: 0.04em;
+  margin-bottom: 2.5rem;
+}
+code, kbd, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em; }
+code { background: var(--paper-sunk); padding: 0.1em 0.35em; border-radius: 3px; }
+kbd {
+  background: var(--paper-sunk); border: 1px solid var(--rule); border-bottom-width: 2px;
+  border-radius: 4px; padding: 0.1em 0.4em; font-size: 0.8em;
+}
+pre {
+  background: var(--paper-sunk); border-left: 2px solid var(--rule);
+  padding: 1rem 1.1rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.55;
+  margin: 1.4rem 0; border-radius: 0 4px 4px 0;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+figure { margin: 2rem 0; }
+figcaption { font-size: 0.82rem; color: var(--ink-soft); font-style: italic; margin-top: 0.65rem; max-width: var(--measure); }
+.diagram {
+  background: var(--paper-sunk); border: 1px solid var(--rule); border-radius: 5px;
+  padding: 1.4rem 1.2rem; overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.74rem; line-height: 1.5; white-space: pre;
+}
+.table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+table {
+  border-collapse: collapse; width: 100%; font-size: 0.88rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+}
+th {
+  text-align: left; font-weight: 600; border-bottom: 1.5px solid var(--ink-soft);
+  padding: 0.45rem 0.7rem 0.45rem 0; font-size: 0.78rem; letter-spacing: 0.03em;
+  text-transform: uppercase; color: var(--ink-soft);
+}
+td { border-bottom: 1px solid var(--rule); padding: 0.5rem 0.7rem 0.5rem 0; vertical-align: top; }
+td code { font-size: 0.8em; }
+.note, .warn, .key {
+  max-width: var(--measure); margin: 1.6rem 0; padding: 0.95rem 1.1rem;
+  border-radius: 4px; font-size: 0.94rem;
+}
+.note { background: var(--paper-sunk); border-left: 3px solid var(--ink-faint); }
+.warn { background: var(--paper-sunk); border-left: 3px solid var(--no); }
+.key  { background: var(--accent-soft); border-left: 3px solid var(--accent); }
+.note p:last-child, .warn p:last-child, .key p:last-child,
+.note ul:last-child, .warn ul:last-child, .key ul:last-child { margin-bottom: 0; }
+.label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+  display: block; margin-bottom: 0.35rem; color: var(--ink-soft);
+}
+.key .label { color: var(--accent); }
+.warn .label { color: var(--no); }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.src { font-size: 0.8rem; color: var(--ink-soft); max-width: var(--measure); }
+.path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.76rem;
+  color: var(--ink-soft); background: var(--paper-sunk); border: 1px solid var(--rule);
+  border-radius: 3px; padding: 0.08em 0.4em; white-space: nowrap;
+}
+.verdict {
+  display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem; padding: 0.1em 0.45em; border-radius: 3px;
+  border: 1px solid currentColor; white-space: nowrap;
+}
+.v-auto { color: var(--ok); }
+.v-manual { color: var(--no); }
+.v-loud { color: var(--ink-soft); }
+/* 목차 */
+nav.toc {
+  max-width: var(--measure); margin: 0 0 3rem; padding: 1.1rem 1.3rem;
+  border: 1px solid var(--rule); border-radius: 5px; background: var(--paper-sunk);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  font-size: 0.88rem;
+}
+nav.toc ol { margin: 0; padding-left: 1.4rem; max-width: none; }
+nav.toc li { margin-bottom: 0.25rem; }
+nav.toc > p { margin: 0 0 0.6rem; }
+footer {
+  margin-top: 5rem; padding-top: 1.5rem; border-top: 1px solid var(--rule);
+  max-width: var(--measure); font-size: 0.88rem; color: var(--ink-soft);
+}
+@media print {
+  :root {
+    --ink: #000; --ink-soft: #444; --ink-faint: #666; --paper: #fff;
+    --paper-sunk: #f4f4f4; --rule: #bbb; --accent: #000; --accent-soft: #f0f0f0;
+  }
+  body { padding: 0; font-size: 10.5pt; max-width: none; }
+  h2 { page-break-after: avoid; }
+  pre, .diagram, table, .key, .note, .warn { page-break-inside: avoid; }
+  a::after { content: " (" attr(href) ")"; font-size: 0.8em; color: #666; }
+  a[href^="#"]::after { content: ""; }
+}
+@media (max-width: 34rem) {
+  body { padding: 2rem 1.1rem 4rem; }
+  h1 { font-size: 1.6rem; }
+}
+</style>
+</head>
+<body>
+
+<p class="kicker">so101-ros · 팀 실무 가이드</p>
+<h1>SO-101로 데이터를 모아 ACT를 학습시키기까지</h1>
+<p class="subtitle">
+  이 레포를 처음 받은 사람이 이 문서 하나로 <strong>설치 → teleop → 수집 → 변환 → 학습 → 추론</strong>
+  까지 혼자 갈 수 있게 쓴 문서. 코드 해설이 아니라 <strong>순서와 함정</strong>이 목적이다.
+</p>
+<p class="meta">
+  근거는 레포 코드 자체 · 실물 검증 상태는 §10에 명시 · 더 깊은 설계 근거는 브랜치
+  <code>docs/teach-workspace</code>의 <span class="path">docs/teach/</span>
+</p>
+
+<nav class="toc">
+<p><strong>순서대로 읽되, 막히면 §9(증상→원인)로 바로 갈 것.</strong></p>
+<ol>
+  <li><a href="#big-picture">전체 그림 — 한 장</a></li>
+  <li><a href="#two-envs">환경이 둘, 계약이 하나</a></li>
+  <li><a href="#setup">설치 — 새 PC 기준</a></li>
+  <li><a href="#bootstrap">모터 셋업 + 캘리브레이션</a></li>
+  <li><a href="#teleop">teleop 검증 (mock → 실물)</a></li>
+  <li><a href="#cameras">카메라 배선 — 디바이스 경로만 맞추면 된다</a></li>
+  <li><a href="#record">에피소드 수집</a></li>
+  <li><a href="#convert">변환 — rosbag → LeRobot v3.0</a></li>
+  <li><a href="#train">ACT 학습</a></li>
+  <li><a href="#infer">추론 (closed loop)</a></li>
+  <li><a href="#troubleshoot">증상 → 원인 역방향표</a></li>
+  <li><a href="#unverified">미검증 항목 · 알려진 함정</a></li>
+  <li><a href="#change">계약을 바꿔야 할 때의 파급</a></li>
+  <li><a href="#hygiene">데이터 위생 · 테스트 · 파일 지도</a></li>
+</ol>
+</nav>
+
+<h2 id="big-picture"><span class="step">1</span>전체 그림 — 한 장</h2>
+
+<div class="key">
+  <span class="label">한 문장</span>
+  <p><strong>사람 손 → leader 서보 → 토픽 → follower 서보</strong>가 실시간 경로다.
+  같은 토픽들을 <strong>바이트째로 bag에 적어</strong> 오프라인에서 데이터셋·정책으로 굽고,
+  <strong>정책이 teleop과 똑같은 토픽에 명령을 쏘면</strong> 사람이 빠진 자리에 들어간다.</p>
+</div>
+
+<figure>
+<div class="diagram">     ┌─ 실시간 (ROS 2 Jazzy) ─────────────────────────────────────────────┐
+     │   사람 손                                                          │
+     │      ▼                                                             │
+     │   leader 팔 (STS3215 서보 x6)   USB · feetech_ros2_driver           │
+     │      ▼                                                             │
+     │   ros2_control_node /leader     ── 100 Hz ── read()                │
+     │      └ joint_state_broadcaster ─► /leader/joint_states              │
+     │      ▼                                                             │
+     │   teleop_node   ── 50 Hz 타이머 · stale 0.25 s 가드                 │
+     │      ▼  /follower/forward_controller/commands  (Float64MultiArray)  │
+     │   ros2_control_node /follower   ── 100 Hz ── write()                │
+     │      ├ forward_controller       (명령 → 하드웨어)                   │
+     │      └ joint_state_broadcaster ─► /follower/joint_states            │
+     │                                                                    │
+     │   카메라 노드 x2   cameras.launch.py (기본 off — §6)                │
+     │      ├─► /follower/camera/wrist/image_raw   Image 480x640 rgb8      │
+     │      └─► /follower/camera/top/image_raw                            │
+     │      ▼   위 4개 토픽 = so101.yaml 이 지정한 계약                    │
+     │   episode_recorder_node    raw=True · CDR 바이트 무가공             │
+     │      ▲ /recorder/command ◄── keyboard_teleop   s / e / d / q        │
+     │      ▼                                                             │
+     │   bags/ep_000/  ( *.mcap + metadata.yaml )                         │
+     └────────────────────────┬───────────────────────────────────────────┘
+                              │  오프라인 · ROS + pixi 동시 필요
+     ┌────────────────────────▼───────────────────────────────────────────┐
+     │   python -m converter.cli    30 Hz as-of 그리드 · drop 회계         │
+     │      ▼  datasets/local/so101_pickplace/  (LeRobot v3.0, AV1)       │
+     └────────────────────────┬───────────────────────────────────────────┘
+                              │  pixi lerobot 단독
+     ┌────────────────────────▼───────────────────────────────────────────┐
+     │   act/tools/train_so101.py                                         │
+     │      ▼  outputs/act_so101/{act_so101.pt, stats.json}  ← 한 몸       │
+     └────────────────────────┬───────────────────────────────────────────┘
+                              │  ROS + pixi 동시 필요
+     ┌────────────────────────▼───────────────────────────────────────────┐
+     │   sync_inference_node   30 Hz                                      │
+     │      obs 3개 → obs_builder → normalize → select_action             │
+     │      ▼  /follower/forward_controller/commands                      │
+     │          └─► teleop_node 가 쓰던 그 토픽. 사람이 빠진 자리.         │
+     └────────────────────────────────────────────────────────────────────┘</div>
+<figcaption>오른쪽 숫자는 각 단계의 주기. 추론이 <strong>teleop과 같은 토픽</strong>에 쏘기 때문에 정책 배포에 follower 쪽 변경이 한 줄도 필요 없다 — 파이프라인이 원이 되는 지점.</figcaption>
+</figure>
+
+<h2 id="two-envs"><span class="step">2</span>환경이 둘, 계약이 하나</h2>
+
+<p>이 레포를 헷갈리게 만드는 첫 번째 사실. 파이썬 환경이 둘이고 서로 겹치지 않는다.</p>
+
+<div class="table-wrap">
+<table>
+<tr><th>환경</th><th>주는 것</th><th>진입</th></tr>
+<tr>
+  <td><strong>system ROS</strong><br>ROS 2 Jazzy</td>
+  <td><code>rclpy</code>, <code>rosbag2_py</code>, 메시지 타입, <code>ros2_control</code></td>
+  <td><code>source /opt/ros/jazzy/setup.bash</code><br><code>source install/setup.bash</code></td>
+</tr>
+<tr>
+  <td><strong>pixi lerobot</strong><br>lerobot 0.5.1 + torch</td>
+  <td><code>lerobot</code>, <code>torch</code>, CUDA</td>
+  <td><code>pixi run -e lerobot …</code></td>
+</tr>
+</table>
+</div>
+
+<p>대부분의 단계는 한쪽에만 있다. 그런데 <strong>두 지점은 양쪽을 동시에</strong> 요구한다:</p>
+
+<ul>
+  <li><code>converter.cli</code> — <code>rosbag2_py</code>(ROS)로 bag을 읽고 <code>lerobot</code>(pixi)으로 데이터셋을 쓴다</li>
+  <li><code>sync_inference_node</code> — <code>rclpy</code>(ROS)로 토픽을 받고 <code>torch</code>(pixi)로 추론한다</li>
+</ul>
+
+<div class="warn">
+  <span class="label">함정 1 — PYTHONPATH를 덮어쓰지 말 것</span>
+  <p>ROS를 source하면 ROS 항목이 <code>PYTHONPATH</code>에 올라가고 pixi 환경이 그것을 상속한다.
+  덮어쓰면 <code>rosbag2_py</code>가 사라진다. <strong>반드시 append</strong>:</p>
+  <pre><code>export PYTHONPATH="$PWD/src/converter:$PYTHONPATH"   # O
+export PYTHONPATH="$PWD/src/converter"                # X — ROS 항목 소실</code></pre>
+</div>
+
+<h3>계약: <code>so101.yaml</code>이 유일한 근거</h3>
+
+<p>
+  <span class="path">src/converter/config/so101.yaml</span> 한 파일이 아래 전부를 지정한다.
+  recorder·converter·inference가 <strong>같은 이 파일을 읽는다</strong> — 그래서 세 계층이 조용히
+  어긋날 수 없다. 흐름에 대한 어떤 질문이든 이 파일에서 출발하면 답이 나온다.
+</p>
+
+<div class="table-wrap">
+<table>
+<tr><th>계약 항목</th><th>값</th><th>읽는 곳</th></tr>
+<tr><td>관절 순서 (canonical)</td><td><code>shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper</code></td><td>decoders · obs_builder<br>(URDF·<code>teleop_node.JOINTS</code>는 <strong>안 읽음</strong>)</td></tr>
+<tr><td>토픽 4개 + 타입</td><td>joint_states / commands / wrist / top</td><td>recorder 구독 · bag 트랙 · converter 검증 · inference 파라미터 기본값</td></tr>
+<tr><td><code>fps: 30</code></td><td>그리드 주기</td><td>converter 그리드 · 학습 <code>delta_timestamps</code></td></tr>
+<tr><td><code>max_age_s</code></td><td>state/action 0.05 · 이미지 0.1</td><td>converter as-of 판정</td></tr>
+<tr><td>이미지 shape</td><td><code>[480, 640, 3]</code>, <code>rgb8</code></td><td>decoders (불일치는 <strong>에러</strong>)</td></tr>
+<tr><td>feature 키</td><td><code>observation.state</code> · <code>observation.images.wrist</code> · <code>observation.images.top</code> · <code>action</code></td><td>LeRobot v3.0 스키마 · ACT 입력</td></tr>
+</table>
+</div>
+
+<div class="note">
+  <span class="label">action이 무엇인지 정확히</span>
+  <p><code>action</code>은 follower의 <em>실제</em> 각도가 아니라 <strong>명령받은 각도</strong>
+  (<code>/follower/forward_controller/commands</code>)다. ACT가 배우는 것은 "이 관측에서 사람이
+  무엇을 명령했나"이므로 명령 쪽이 맞다. follower의 실제 각도는
+  <code>observation.state</code>로 들어간다.</p>
+</div>
+
+<h2 id="setup"><span class="step">3</span>설치 — 새 PC 기준</h2>
+
+<p><strong>필요한 것:</strong> Ubuntu 24.04 + ROS 2 Jazzy(<code>/opt/ros/jazzy</code>), USB로 연결된
+SO-101 leader + follower, 카메라 2대(손목 + 3인칭 고정). 학습까지 하려면 CUDA GPU.</p>
+
+<pre><code># 1) 시스템 도구
+sudo apt install python3-rosdep python3-colcon-common-extensions
+sudo rosdep init 2>/dev/null; rosdep update
+
+# 2) Pixi (LeRobot 계층. sudo 불필요)
+curl -fsSL https://pixi.sh/install.sh | bash
+export PATH="$HOME/.pixi/bin:$PATH"     # 또는 새 셸
+
+# 3) 클론 + ROS 계층 빌드
+git clone git@github.com:dsafjk0024/so101-ros.git
+cd so101-ros
+source /opt/ros/jazzy/setup.bash
+rosdep install --from-paths src --ignore-src -r -y   # 카메라 드라이버(usb_cam·v4l2_camera)도 여기서 깔림
+colcon build --base-paths src --symlink-install
+source install/setup.bash
+
+# 4) LeRobot 계층
+pixi install -e lerobot        # lerobot 0.5.1 + torch(cuda). 몇 분 걸림
+pixi run -e lerobot lerobot-info   # 확인: 0.5.1 · CUDA · GPU 인식</code></pre>
+
+<div class="warn">
+  <span class="label">함정 2 — <code>--symlink-install</code>은 선택이 아니다</span>
+  <p><code>converter.config.DEFAULT_CONFIG_PATH</code>가 <code>Path(__file__).parents[1]/"config"</code>
+  로 <strong>소스 트리</strong>를 가리킨다. 심링크 빌드에서는 맞지만, 일반 빌드에서는
+  <code>site-packages</code> 아래로 복사되어 <strong>기본 config 경로가 깨진다</strong>.
+  항상 <code>--symlink-install</code>로 빌드할 것. (우회: recorder는 노드 파라미터
+  <code>config_path</code>로 명시 가능.)</p>
+</div>
+
+<div class="note">
+  <span class="label">USB 포트 이름 — udev 규칙을 만들어 두는 편이 낫다</span>
+  <p>launch 기본값이 <code>/dev/so101_leader</code> · <code>/dev/so101_follower</code>다.
+  udev 심링크를 만들지 않았으면 매번 <code>leader_usb:=/dev/ttyACM0</code>처럼 실제 경로를
+  넘겨야 하고, <strong>재부팅할 때마다 두 팔의 번호가 바뀔 수 있다</strong>. 시리얼 번호 기준으로
+  고정 심링크를 만들어 두면 이후 모든 명령이 짧아진다.</p>
+</div>
+
+<h2 id="bootstrap"><span class="step">4</span>모터 셋업 + 캘리브레이션</h2>
+
+<p>
+  <strong>ROS로 실물을 제어하기 전에 반드시</strong> 해야 한다. 모터 ID와 homing 값을 서보
+  EEPROM에 기록하는 작업이고, HF LeRobot의 네이티브 CLI를 쓴다(ROS 무관).
+  <strong>로봇을 최종 설치할 위치에서</strong> 할 것.
+</p>
+
+<pre><code>export PATH="$HOME/.pixi/bin:$PATH"
+
+# 1) USB 포트 찾기
+pixi run -e lerobot lerobot-find-port
+
+# 2) 모터 ID 셋업 (일회성 — ID는 영구)
+pixi run -e lerobot -- lerobot-setup-motors --robot.type=so101_follower --robot.port=&lt;FOLLOWER_PORT&gt;
+pixi run -e lerobot -- lerobot-setup-motors --teleop.type=so101_leader   --teleop.port=&lt;LEADER_PORT&gt;
+
+# 3) 캘리브레이션
+pixi run -e lerobot -- lerobot-calibrate --robot.type=so101_follower --robot.port=&lt;FOLLOWER_PORT&gt; --robot.id=my_follower
+pixi run -e lerobot -- lerobot-calibrate --teleop.type=so101_leader   --teleop.port=&lt;LEADER_PORT&gt;   --teleop.id=my_leader</code></pre>
+
+<div class="table-wrap">
+<table>
+<tr><th>언제 다시 해야 하나</th><th>모터 ID</th><th>캘리브레이션(homing)</th></tr>
+<tr><td>다른 PC로 옮김</td><td>불필요</td><td>불필요 — <span class="path">~/.cache/huggingface/lerobot/calibration/</span> 복사</td></tr>
+<tr><td>팔을 재조립·분해</td><td>불필요</td><td><strong>필요</strong></td></tr>
+<tr><td>서보 교체</td><td><strong>필요</strong></td><td><strong>필요</strong></td></tr>
+</table>
+</div>
+
+<p class="src">
+  캘리브 값은 서보 EEPROM(<code>Homing_Offset</code>)에도 써지므로, ROS 드라이버는 이미
+  보정된 <code>Present_Position</code>을 읽는다. 그래서 <code>joint_config_file</code>은 선택이다 —
+  PID·토크 한계를 손보고 싶을 때만 쓴다(<span class="path">src/feetech_ros2_driver/doc/user.md</span>).
+  캘리브 폴더는 <strong>백업 권장</strong>.
+</p>
+
+<h2 id="teleop"><span class="step">5</span>teleop 검증 (mock → 실물)</h2>
+
+<pre><code>source /opt/ros/jazzy/setup.bash &amp;&amp; source install/setup.bash
+
+# 하드웨어 없이 배선만 확인
+ros2 launch bringup teleop.launch.py hardware_type:=mock
+
+# 실물
+ros2 launch bringup teleop.launch.py \
+  leader_usb:=&lt;LEADER_PORT&gt; follower_usb:=&lt;FOLLOWER_PORT&gt;</code></pre>
+
+<p>leader 팔을 손으로 움직이면 follower가 따라온다. 이 한 줄이 <strong>프로세스 8개</strong>를 띄운다:</p>
+
+<div class="table-wrap">
+<table>
+<tr><th>프로세스</th><th>수명</th><th>역할</th></tr>
+<tr><td><code>robot_state_publisher</code> ×2</td><td>상주</td><td>URDF → <code>/tf</code>, <code>/robot_description</code></td></tr>
+<tr><td><code>ros2_control_node</code> ×2</td><td>상주</td><td>100 Hz 제어 루프. read → update → write</td></tr>
+<tr><td><code>spawner</code> ×3</td><td><strong>죽는다</strong></td><td>컨트롤러 로드+활성화 후 종료. <code>ros2 node list</code>에 없는 게 정상</td></tr>
+<tr><td><code>teleop_node</code></td><td>상주</td><td>leader→follower 미러. <strong>3초 지연 후</strong> 시작</td></tr>
+</table>
+</div>
+
+<h3>배선 확인 명령 — 막히면 이 순서로</h3>
+
+<pre><code># 무슨 노드가 살아있나
+ros2 node list
+
+# 컨트롤러가 active 인가 (spawner 가 죽은 뒤에도 이걸로 확인)
+ros2 control list_controllers -c /follower/controller_manager
+
+# 하드웨어 인터페이스 (leader 에 command 가 '없어야' 정상)
+ros2 control list_hardware_interfaces -c /leader/controller_manager
+
+# 토픽이 흐르나 · 몇 Hz 인가
+ros2 topic hz /leader/joint_states
+
+# 명령이 실제로 나가나
+ros2 topic echo /follower/forward_controller/commands --once</code></pre>
+
+<div class="note">
+  <span class="label">알아 두면 진단이 빨라지는 세 가지</span>
+  <ul>
+    <li><strong>leader에는 <code>command_interface</code>가 없다.</strong> URDF(xacro)의
+      <code>variant:=leader</code>가 생성하지 않는다 → leader에 forward_controller를 붙이면
+      인터페이스 매칭 실패로 활성화가 <strong>거부</strong>된다(조용히 무시가 아니다).</li>
+    <li><strong>leader는 명령을 못 받으므로 손을 떼면 팔이 처진다.</strong> 수집 중에 이 성질이
+      중요해진다(§7).</li>
+    <li><strong>forward_controller는 마지막 명령을 계속 유지한다.</strong> 명령이 끊기면 멈추는 게
+      아니라 그 자세로 버틴다. 그래서 <em>relay 쪽</em>이 0.25초 침묵을 감지해 퍼블리시를 멈춘다.</li>
+  </ul>
+</div>
+
+<h2 id="cameras"><span class="step">6</span>카메라 배선</h2>
+
+<p>
+  이미지를 만드는 것은 ROS 카메라 드라이버(<code>usb_cam</code> 등)이고, 이 레포는 그것을
+  <span class="path">bringup/launch/cameras.launch.py</span>로 감싸 둔다. 이 launch가
+  <strong>토픽 이름·인코딩·해상도를 <code>so101.yaml</code>에서 읽어</strong> 노드 네임스페이스를
+  정하므로, 손으로 <code>ros2 run</code>을 치는 것보다 계약과 어긋날 여지가 없다.
+</p>
+
+<div class="warn">
+  <span class="label">헷갈리기 쉬운 것 — URDF 카메라 인자는 이미지와 무관</span>
+  <p>bringup은 <code>enable_static_cam:=false</code>, <code>enable_wrist_cam:=false</code>로 URDF를 만든다.
+  그 xacro 인자들은 <strong>TF 프레임만</strong> 추가하는 것이고 <strong>이미지를 만들지 않는다.</strong>
+  이미지는 카메라 드라이버 노드가 퍼블리시해야 하고, 없으면 recorder가 <kbd>s</kbd>를 거부하거나
+  변환이 traceback으로 죽는다.</p>
+</div>
+
+<h3>맞춰야 하는 요구사항</h3>
+
+<div class="table-wrap">
+<table>
+<tr><th>항목</th><th>요구값</th><th>안 맞으면</th></tr>
+<tr><td>손목 카메라 토픽</td><td><code>/follower/camera/wrist/image_raw</code></td><td rowspan="2">recorder start gate 거부 / 변환 시 <code>configured topic not found</code></td></tr>
+<tr><td>3인칭 카메라 토픽</td><td><code>/follower/camera/top/image_raw</code></td></tr>
+<tr><td>타입</td><td><code>sensor_msgs/msg/Image</code></td><td>변환 시 타입 불일치 에러</td></tr>
+<tr><td>인코딩</td><td><strong><code>rgb8</code></strong></td><td>decoders가 에러 (<code>bgr8</code>도 거부)</td></tr>
+<tr><td>해상도</td><td><strong>640×480</strong> (<code>shape: [480, 640, 3]</code>)</td><td>shape 불일치 에러. <strong>bag에 픽셀로 박히므로 재수집해야 함</strong></td></tr>
+<tr><td>프레임레이트</td><td>30 Hz 목표 (실측 27–28도 통과)</td><td>느리면 틱 drop → 에피소드 스킵</td></tr>
+</table>
+</div>
+
+<h3>띄우기</h3>
+
+<p>
+  디바이스 경로는 <strong>udev 심링크(<span class="path">99-so101-cameras.rules</span>)로 고정해
+  두는 것을 강하게 권장한다</strong> — 두 카메라가 동일 모델(같은 idVendor/idProduct, 심지어
+  펌웨어 시리얼도 <code>SN0001</code>로 동일)이라 USB 포트 위치(<code>KERNELS</code>)로만
+  구분되고, 규칙이 있으면 <code>/dev/videoN</code> 번호가 재부팅·재연결마다 바뀌어도
+  <code>/dev/cam_wrist</code> / <code>/dev/cam_top</code>은 항상 맞는 카메라를 가리킨다.
+  <code>wrist_device</code> / <code>top_device</code>의 기본값이 바로 이 두 심링크다.
+</p>
+
+<pre><code>sudo cp 99-so101-cameras.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules &amp;&amp; sudo udevadm trigger
+# 카메라 재연결 후 확인
+ls -la /dev/cam_wrist /dev/cam_top</code></pre>
+
+<p class="src">
+  규칙이 아직 없거나 카메라가 다른 모델이면 <code>v4l2-ctl --list-devices</code>로 raw 경로를
+  찾아 <code>wrist_device:=/dev/videoN</code>으로 직접 넘기면 된다.
+</p>
+
+<pre><code># 카메라만 (기본값 그대로 — 심링크 사용)
+ros2 launch bringup cameras.launch.py
+
+# 팔 + 카메라 한 번에 — 수집할 때 쓰는 형태
+ros2 launch bringup teleop.launch.py enable_cameras:=true \
+  leader_usb:=&lt;L&gt; follower_usb:=&lt;F&gt;</code></pre>
+
+<div class="table-wrap">
+<table>
+<tr><th><code>cameras.launch.py</code> 인자</th><th>기본값</th><th>비고</th></tr>
+<tr><td><code>wrist_device</code> / <code>top_device</code></td><td><code>/dev/cam_wrist</code> / <code>/dev/cam_top</code></td><td>udev SYMLINK 규칙 기준. 규칙 미설치 PC에서는 <code>/dev/videoN</code>으로 override</td></tr>
+<tr><td><code>driver</code></td><td><code>usb_cam</code></td><td><code>v4l2_camera</code>도 가능하나, 이 레포에서 실측한 <code>v4l2_camera</code> 0.7.1은
+  <code>pixel_format:=MJPG</code> 요청 시 디코드를 못 해 노드가 그대로 죽는다(<code>terminate called ... Aborted</code>).
+  MJPG로 대역폭을 줄이고 싶으면 <code>usb_cam</code>을 쓸 것</td></tr>
+<tr><td><code>framerate</code></td><td>계약의 <code>fps</code> (=30.0)</td><td>usb_cam에만 적용</td></tr>
+<tr><td><code>frame_prefix</code></td><td><code>follower/</code></td><td>TF 프레임 접두사. 데이터셋과 무관</td></tr>
+</table>
+</div>
+
+<p class="src">
+  토픽 이름·<code>rgb8</code>·640×480은 <strong>인자가 아니다</strong> — <code>so101.yaml</code>에서 유도된다.
+  계약을 바꾸면 launch가 따라온다(§13). <code>teleop.launch.py</code>에서 카메라가 기본
+  <strong>off</strong>인 이유는 <code>hardware_type:=mock</code> 배선 확인을 카메라 없이 하려는 것.
+</p>
+
+<p><strong>띄운 뒤 반드시 계약을 확인한다</strong> — 드라이버가 조용히 다른 인코딩·크기로
+떨어지는 경우가 있고, 그건 변환할 때까지 에러가 아니다:</p>
+
+<pre><code>ros2 topic echo /follower/camera/top/image_raw --field encoding --once   # rgb8 이어야 함
+ros2 topic echo /follower/camera/top/image_raw --field width    --once   # 640
+ros2 topic echo /follower/camera/top/image_raw --field height   --once   # 480</code></pre>
+
+<div class="warn">
+  <span class="label">함정 3 — <code>ros2 topic hz</code>는 큰 <code>Image</code> 토픽에서 믿지 말 것</span>
+  <p>실제로 걸려서 몇 시간을 버린 것: <code>ros2 topic hz &lt;image 토픽&gt;</code>이 1~3 Hz로 불규칙하게
+  나와서 커널 소켓 버퍼(<code>net.core.rmem_max</code>)를 의심하고 늘렸는데 <strong>효과가 없었다</strong> —
+  원래 값(212992)으로 되돌려도 실측 결과는 그대로였다. <code>--wall-time</code> 옵션을 줘도 마찬가지로
+  나쁘게 나온다. 같은 노드의 <code>camera_info</code>(작은 메시지)나 순수 <code>std_msgs/String</code>
+  퍼블리셔는 <code>hz</code>로도 정확히 30 Hz가 나온다 — <strong><code>hz</code> 도구 자체가 큰
+  <code>sensor_msgs/Image</code>를 다룰 때 부정확하다</strong>는 뜻이지, 전송이 실제로 느린 게 아니다.</p>
+  <p><strong>신뢰할 수 있는 측정법은 메시지를 직접 세는 것:</strong></p>
+  <pre><code>timeout 10 ros2 topic echo /follower/camera/wrist/image_raw --field height &gt; /tmp/w.txt
+echo "frames: $(($(wc -l &lt; /tmp/w.txt) / 2))"   # 10초 동안 몇 개 왔는지. /10 하면 fps</code></pre>
+  <p>두 카메라를 <strong>동시에 켠 상태로</strong> 각각 실행해서 합산 대역폭에서도 떨어지지 않는지
+  확인할 것 — 한 대씩 볼 때의 숫자는 의미가 없다. 이 레포에서 usb_cam 두 대 동시 실측은
+  27.4 / 27.5 fps로 정상이었다(목표 30 fps).</p>
+</div>
+
+<div class="key">
+  <span class="label">카메라 캘리브레이션은 왜 없어도 되나</span>
+  <p>ACT는 픽셀→액션 end-to-end라서 <strong>카메라 캘리브레이션(intrinsic/extrinsic)이 필요 없다.</strong>
+  대신 <strong>물리적 고정</strong>이 요구사항이다 — 수집과 추론 사이에 카메라를 옮기면 정책이 깨진다.</p>
+</div>
+
+<h2 id="record"><span class="step">7</span>에피소드 수집</h2>
+
+<p>터미널 3개. 모두 <code>source /opt/ros/jazzy/setup.bash &amp;&amp; source install/setup.bash</code> 한 상태로.</p>
+
+<pre><code># 터미널 1 — 두 팔 + teleop relay + 카메라 2대 (device는 §6의 udev 심링크 기본값 사용)
+ros2 launch bringup teleop.launch.py enable_cameras:=true \
+  leader_usb:=&lt;L&gt; follower_usb:=&lt;F&gt;
+
+# 터미널 2 — recorder
+ros2 run recorder episode_recorder_node --ros-args -p root_dir:=bags
+
+# 터미널 3 — 키보드 제어
+ros2 run recorder keyboard_teleop</code></pre>
+
+<p class="src">
+  <strong>수집 시작 전에</strong> 터미널 하나를 더 열어 <code>ros2 topic hz</code>로 두 카메라를
+  30초쯤 실측할 것(§6). 여기서 이미지 간격이 0.1초를 넘나들면 변환에서 에피소드가 스킵된다.
+</p>
+
+<div class="table-wrap">
+<table>
+<tr><th>키</th><th>동작</th><th>결과</th></tr>
+<tr><td><kbd>s</kbd></td><td>start</td><td>4개 토픽이 최근 0.5초 안에 왔는지 확인 후 <code>bags/ep_NNN/</code> 시작. 하나라도 없으면 <strong>거부하고 그 토픽 이름을 로그에 찍는다</strong></td></tr>
+<tr><td><kbd>e</kbd></td><td>stop = 저장</td><td>bag flush + <code>metadata.yaml</code> 기록, 인덱스 <strong>+1</strong></td></tr>
+<tr><td><kbd>d</kbd></td><td>discard</td><td>디렉토리 <code>rmtree</code>, 인덱스 <strong>그대로</strong> → 다음 <kbd>s</kbd>가 <strong>같은 번호 재사용</strong></td></tr>
+<tr><td><kbd>q</kbd></td><td>quit</td><td>녹화 중이면 <strong>저장이 아니라 폐기</strong>하고 종료</td></tr>
+</table>
+</div>
+
+<h3>수집 루프 — 사람이 하는 일</h3>
+
+<ol>
+  <li>물체를 시작 위치에 놓는다 <em>(이 리셋 구간은 녹화되면 안 된다)</em></li>
+  <li><kbd>s</kbd> → 시연 → 성공/실패 판단</li>
+  <li>성공이면 <kbd>e</kbd>, 실패면 <kbd>d</kbd></li>
+  <li><strong><kbd>e</kbd>/<kbd>d</kbd>를 누른 <em>뒤에</em> leader에서 손을 뗀다</strong> —
+    leader는 명령을 못 받으므로 손을 떼면 팔이 처지고, 그 처지는 동작이 에피소드 끝에 녹화된다</li>
+  <li>1로 돌아간다</li>
+</ol>
+
+<div class="key">
+  <span class="label">무엇을 버리고 무엇을 남기나 — 코드에 없는 지식</span>
+  <ul>
+    <li><strong>버린다:</strong> 태스크 실패, 물체를 건드려 위치가 틀어짐, 중간에 카메라가 가려짐,
+      의도치 않은 리셋 동작이 섞임</li>
+    <li><strong>남긴다:</strong> <em>어설프지만 성공한</em> 시도. 완벽한 궤적만 학습하면 정책이
+      compounding error에서 <strong>복구를 배우지 못한다</strong></li>
+    <li>사람 판단 게이트는 <strong>더 엄격하게가 늘 옳은 유일한 게이트</strong>다. 나머지 임계값들과 달리
+      느슨하게 할 이유가 없다</li>
+  </ul>
+</div>
+
+<div class="table-wrap">
+<table>
+<tr><th>목표</th><th>수치 감각</th></tr>
+<tr><td>스모크 수집</td><td>2–3 에피소드. <strong>여기서 대부분의 문제가 드러난다</strong> — 실물 teleop, recorder, bag 내용, 변환 drop율을 한 번에 확인</td></tr>
+<tr><td>본 수집</td><td>50 에피소드 ≈ 시도 70–80회 ≈ 1–2시간</td></tr>
+<tr><td>bag 크기</td><td>480×640×3 × 2캠 × 30 fps ≈ <strong>55 MB/s</strong> → 20초 에피소드 ≈ 1.1 GB</td></tr>
+</table>
+</div>
+
+<h3>첫 수집에서 일부러 확인할 것 3가지</h3>
+
+<ol>
+  <li><strong>일부러 실패시켜 보기.</strong> 카메라 하나를 USB에서 뽑거나 그 노드를 죽이고 <kbd>s</kbd> →
+    <code>start refused: topic(s) missing or stale</code>에 <strong>그 토픽 이름</strong>이 찍히는지</li>
+  <li><kbd>d</kbd> 후 다시 <kbd>s</kbd> → <strong>같은 <code>ep_NNN</code></strong>이 재사용되는지</li>
+  <li><kbd>e</kbd> 후 <code>ls bags/ep_000/</code> → <code>metadata.yaml</code>과 <code>*.mcap</code>이
+    <strong>둘 다</strong> 있는지. <code>metadata.yaml</code>이 없는 bag은 <strong>읽을 수 없다</strong>(에피소드 통째로 손실)</li>
+</ol>
+
+<div class="warn">
+  <span class="label">함정 4 — recorder를 두 개 띄우지 말 것</span>
+  <p>다음 에피소드 번호는 노드 생성 시점에 <code>bags/ep_*</code>를 <strong>한 번만</strong> 스캔해서 정한다.
+  두 개를 띄우면 둘 다 같은 번호를 잡아 서로를 덮어쓴다. (노드를 껐다 켜는 것은 안전하다 —
+  기존 에피소드 뒤부터 이어 붙인다.)</p>
+</div>
+
+<h2 id="convert"><span class="step">8</span>변환 — rosbag → LeRobot v3.0</h2>
+
+<p>ROS 노드가 아니라 <strong>오프라인 CLI</strong>이고, <strong>두 환경이 동시에</strong> 필요하다.</p>
+
+<pre><code>source /opt/ros/jazzy/setup.bash          # 필수: rosbag2_py 를 PYTHONPATH 에 올림
+source install/setup.bash                 # converter 패키지
+export PATH="$HOME/.pixi/bin:$PATH"
+
+pixi run -e lerobot python -m converter.cli --bags bags/ --verbose</code></pre>
+
+<p class="src">
+  <code>install/setup.bash</code>를 source하지 않았다면
+  <code>export PYTHONPATH="$PWD/src/converter:$PYTHONPATH"</code>로 직접 올려도 된다(append!).
+  ROS를 안 올리면 CLI가 <strong>종료코드 2</strong>와 함께 무엇을 source할지 알려주고 멈춘다.
+</p>
+
+<div class="table-wrap">
+<table>
+<tr><th>종료코드</th><th>뜻</th></tr>
+<tr><td><code>0</code></td><td>전부 변환</td></tr>
+<tr><td><code>1</code></td><td>스킵된 에피소드가 있음, 또는 변환 0건</td></tr>
+<tr><td><code>2</code></td><td>ROS가 <code>PYTHONPATH</code>에 없음</td></tr>
+</table>
+</div>
+
+<div class="table-wrap">
+<table>
+<tr><th>주요 플래그</th><th>기본값</th><th>뜻</th></tr>
+<tr><td><code>--bags</code></td><td>(필수)</td><td>에피소드 bag 디렉토리들이 있는 폴더</td></tr>
+<tr><td><code>--root</code></td><td><code>datasets/&lt;repo_id&gt;</code></td><td>데이터셋 출력 경로</td></tr>
+<tr><td><code>--overwrite</code></td><td>off</td><td>기존 데이터셋 교체 (없으면 <code>FileExistsError</code>)</td></tr>
+<tr><td><code>--limit N</code></td><td>없음</td><td>앞 N개만 변환 (첫 시도에 유용)</td></tr>
+<tr><td><code>--max-interior-drop-frac</code></td><td><code>0.02</code></td><td>이 비율을 넘는 에피소드는 스킵</td></tr>
+<tr><td><code>--verbose</code></td><td>off</td><td>에피소드별 · feature별 동기화 통계</td></tr>
+</table>
+</div>
+
+<h3>프레임을 만드는 방식 — as-of 고정 그리드</h3>
+
+<p>
+  메시지가 올 때마다 프레임을 만들지 <strong>않는다.</strong> 30 Hz 고정 틱을 놓고, 각 틱마다
+  feature별로 <strong>"그 시각 이전의 가장 최신 샘플"</strong>을 쓴다. 그 샘플이 해당 feature의
+  <code>max_age_s</code>보다 오래됐으면 <strong>그 틱을 버린다</strong>.
+</p>
+
+<div class="note">
+  <span class="label">왜 고정 그리드여야 하나</span>
+  <p>lerobot 0.5.1은 <code>timestamp = frame_index / fps</code>로 시각을 <strong>합성하고 실제 bag
+  시각을 버린다.</strong> 그래서 지터가 있는 프레임 열을 넣으면 <em>균일한 간격으로 기록되어</em>
+  정책이 배우는 <strong>관절 속도가 조용히 왜곡된다.</strong> 균일함은 만드는 쪽이 보장해야 한다.</p>
+</div>
+
+<p>같은 이유로 버린 틱의 <strong>위치</strong>가 중요하다:</p>
+
+<div class="table-wrap">
+<table>
+<tr><th>분류</th><th>어디</th><th>영향</th></tr>
+<tr><td><code>leading</code></td><td>첫 프레임 전</td><td>무해 — 에피소드 앞이 잘릴 뿐</td></tr>
+<tr><td><code>trailing</code></td><td>마지막 프레임 후</td><td>무해 — 뒤가 잘릴 뿐</td></tr>
+<tr><td><strong><code>interior</code></strong></td><td><strong>중간</strong></td><td><strong>위험</strong> — 공백이 정상 간격으로 기록되어 시간축이 왜곡됨. 2% 초과 시 <strong>에피소드 스킵</strong></td></tr>
+</table>
+</div>
+
+<h3><code>--verbose</code> 출력 읽는 법</h3>
+
+<pre><code>ep_000: 587 frames (leading=3 interior=1 trailing=2)
+    observation.state: match=100.0% mean_dt=9.9ms  max_dt=12.1ms
+    action:            match=100.0% mean_dt=20.1ms max_dt=24.0ms
+    observation.images.wrist: match=99.8% mean_dt=36.9ms max_dt=71.2ms
+    observation.images.top:   match=99.8% mean_dt=37.1ms max_dt=68.0ms</code></pre>
+
+<div class="table-wrap">
+<table>
+<tr><th>볼 것</th><th>판정 기준</th></tr>
+<tr><td><code>interior</code></td><td>0에 가까울수록 좋다. <code>span_ticks</code>의 2%를 넘으면 스킵된다</td></tr>
+<tr><td><code>max_dt</code> (이미지)</td><td><strong>100 ms(=<code>max_age_s</code>)에 근접하면 경고 신호.</strong> 다음 수집에서 넘어간다 → USB·카메라 점검</td></tr>
+<tr><td><code>max_dt</code> (state/action)</td><td>50 ms 기준. relay 50 Hz·컨트롤러 100 Hz면 여유가 크다</td></tr>
+<tr><td>drop이 <strong>한 토픽에 몰림</strong></td><td>임계를 올리지 말고 <strong>그 토픽을 고칠 것</strong></td></tr>
+</table>
+</div>
+
+<div class="warn">
+  <span class="label">임계값을 올리고 싶어질 때</span>
+  <p><code>--max-interior-drop-frac</code>를 올리는 것은 <strong>시간 왜곡을 허용하는 것</strong>이고,
+  <code>max_age_s</code>를 올리는 것은 <strong>더 오래된 샘플을 프레임에 넣는 것</strong>이다.
+  둘 다 "숫자를 통과시키는" 조치가 아니라 데이터 품질을 낮추는 조치다.</p>
+  <p>바꿔서 만든 데이터셋은 <strong>그 사실을 어딘가 적어 둘 것</strong> — 나중에 정책이 이상할 때
+  데이터를 의심할 근거가 된다.</p>
+</div>
+
+<h2 id="train"><span class="step">9</span>ACT 학습</h2>
+
+<p>
+  여기서부터 <strong>pixi lerobot 단독</strong>이다(ROS 불필요). 학습은 이 레포의 standalone
+  <code>act/</code> 패키지를 쓴다 — <code>lerobot-train</code>이 아니다.
+</p>
+
+<pre><code>export PATH="$HOME/.pixi/bin:$PATH"
+export PYTHONPATH="$PWD/act:$PYTHONPATH"      # ★ act 패키지 경로. 없으면 ImportError
+
+# 스모크: 루프가 도는지만 확인 (성능 기대하지 않음)
+pixi run -e lerobot python act/tools/train_so101.py \
+  --data-dir datasets/local/so101_pickplace \
+  --repo-id local/so101_pickplace \
+  --steps 200 --batch-size 4 --out outputs/act_smoke
+
+# 본 학습
+pixi run -e lerobot python act/tools/train_so101.py \
+  --data-dir datasets/local/so101_pickplace \
+  --repo-id local/so101_pickplace \
+  --steps 20000 --batch-size 8 --num-workers 4 \
+  --chunk-size 100 --save-freq 5000 --out outputs/act_so101</code></pre>
+
+<div class="warn">
+  <span class="label">함정 5 — <code>act</code>는 pixi에 설치되어 있지 않다</span>
+  <p><code>pixi.toml</code>은 <code>lerobot</code>만 설치한다. <code>act/</code>는 레포 안의 로컬
+  패키지이므로 <strong><code>PYTHONPATH</code>에 <code>$PWD/act</code>를 넣어야</strong>
+  <code>from act import …</code>가 풀린다. 추론 노드도 같은 요구를 갖는다(§10).</p>
+  <p>첫 실행 때 ResNet18 ImageNet 가중치를 <strong>다운로드</strong>한다 → 학습 PC에 인터넷이
+  한 번은 필요하다.</p>
+</div>
+
+<h3>산출물 두 개는 한 몸이다</h3>
+
+<pre><code>outputs/act_so101/
+├── act_so101.pt     # {"model": state_dict, "config": ACTConfig.__dict__, "step": int}
+└── stats.json       # {feature: {"mean": [...], "std": [...]}}   ← MEAN_STD 정규화</code></pre>
+
+<div class="key">
+  <span class="label">체크포인트를 옮길 때 <code>stats.json</code>을 빼먹으면</span>
+  <p>모델은 <code>(x − mean) / std</code>로 정규화된 입력만 본 적이 있고, 그 mean/std는
+  <strong>이 학습 데이터셋에서 나온 특정 숫자</strong>다. 다른 통계로 정규화하면 입력 분포가
+  어긋난다 — <strong>에러는 안 난다. 정책이 그냥 엉뚱하게 움직인다.</strong></p>
+  <p>추론 노드는 <code>checkpoint_path</code>의 <strong>형제 파일</strong>로 <code>stats.json</code>을
+  찾는다. 둘은 같은 디렉토리에 함께 옮길 것.</p>
+</div>
+
+<h3>스모크 학습에서 확인할 것 4가지</h3>
+
+<ol>
+  <li><code>train: N frames, M episodes, image_keys=(...)</code> —
+    <strong>프레임/에피소드 수가 예상과 맞는지.</strong> converter가 스킵한 게 있으면 여기서 드러난다</li>
+  <li><code>act_so101.pt</code>와 <code>stats.json</code>이 <strong>둘 다</strong> 생겼는지</li>
+  <li><code>stats.json</code>의 <code>observation.state</code> → <code>std</code>에
+    <strong>0에 가까운 항목이 있는지.</strong> 있다면 그 관절이 데이터에서 거의 안 움직였다는 뜻 —
+    태스크 설계나 수집 방식을 되돌아볼 신호(예: gripper를 한 번도 안 씀)</li>
+  <li>loss가 <strong>내려가기는 하는지</strong>. 200스텝으로 수렴은 안 되지만 방향은 보인다</li>
+</ol>
+
+<h3><code>chunk_size</code>와 <code>n_action_steps</code> — 추론 성능의 첫 레버</h3>
+
+<div class="table-wrap">
+<table>
+<tr><th></th><th><code>chunk_size</code></th><th><code>n_action_steps</code></th></tr>
+<tr><td>뜻</td><td>한 번에 <strong>예측</strong>하는 스텝 수</td><td>재질의 전까지 <strong>실행</strong>하는 스텝 수</td></tr>
+<tr><td>기본</td><td>100</td><td>100 (학습 스크립트가 <code>chunk_size</code>와 같게 설정)</td></tr>
+</table>
+</div>
+
+<div class="warn">
+  <span class="label">그래서 기본 설정은 3.3초 open loop다</span>
+  <p><code>n_action_steps=100</code>, <code>fps=30</code>이면 추론이 <strong>100/30 ≈ 3.3초 동안
+  새 관측을 보지 않고</strong> 미리 뽑아둔 궤적을 실행한다. 물체가 미끄러져도 정책은 큐가
+  바닥날 때까지 모른다.</p>
+  <p>정책이 굼뜨거나 실패에서 회복을 못 하면 여기가 첫 레버다. 다만
+  <code>train_so101.py</code>에 <code>n_action_steps</code> CLI 플래그가 <strong>없다</strong> —
+  스크립트를 고치거나 체크포인트의 <code>config</code>를 바꿔야 한다.</p>
+</div>
+
+<div class="table-wrap">
+<table>
+<tr><th>설정</th><th>재질의 주기</th><th>계산량</th><th>반응성</th></tr>
+<tr><td><code>n_action_steps=100</code> (현재)</td><td>3.3초</td><td>가장 적음</td><td>낮음</td></tr>
+<tr><td><code>n_action_steps=10</code></td><td>0.33초</td><td>10배</td><td>중간</td></tr>
+<tr><td><code>=1</code> + temporal ensembling</td><td>매 틱</td><td>100배</td><td>가장 높음 (ACT 논문 방식)</td></tr>
+</table>
+</div>
+
+<p class="src">
+  temporal ensembling을 켜려면 <code>temporal_ensemble_coeff</code>를 설정하고
+  <code>n_action_steps</code>를 <strong>반드시 1</strong>로 둬야 한다 — 설정 검증이 강제한다.
+</p>
+
+<h2 id="infer"><span class="step">10</span>추론 (closed loop)</h2>
+
+<div class="warn">
+  <span class="label">시작 전 — 이 노드는 실물 검증 이력이 없다</span>
+  <p>두 환경의 <code>sys.path</code>가 합성된다는 것까지만 확인됐고, 실제 체크포인트 + 실제 토픽으로
+  돈 적이 없다. <strong>팔 주변을 비우고 <kbd>Ctrl-C</kbd>에 손을 올린 채</strong> 시작할 것.</p>
+</div>
+
+<pre><code># 1) follower 만 올린다 — teleop.launch.py 를 쓰면 relay 가 같은 토픽에 쏜다
+ros2 launch bringup follower.launch.py usb_port:=&lt;FOLLOWER_PORT&gt;
+
+# 2) 카메라 2대 (§6) — teleop 을 안 띄우므로 별도로 (device는 udev 심링크 기본값 사용)
+ros2 launch bringup cameras.launch.py
+
+# 3) 추론 노드
+source /opt/ros/jazzy/setup.bash &amp;&amp; source install/setup.bash
+export PATH="$HOME/.pixi/bin:$PATH"
+export PYTHONPATH="$PWD/act:$PYTHONPATH"
+
+pixi run -e lerobot python -m inference.sync_inference_node --ros-args \
+  -p checkpoint_path:=$PWD/outputs/act_so101/act_so101.pt</code></pre>
+
+<div class="table-wrap">
+<table>
+<tr><th>왜 이 형태여야 하나</th><th>이유</th></tr>
+<tr><td><code>python -m inference.sync_inference_node</code></td><td>파일 경로로 직접 실행하면 <code>inference.</code> 절대 import가 풀리지 않는다</td></tr>
+<tr><td><code>source install/setup.bash</code></td><td><code>converter</code>·<code>inference</code> 패키지를 올린다</td></tr>
+<tr><td><code>PYTHONPATH</code>에 <code>act</code></td><td>노드가 <code>act.policy</code>·<code>act.checkpoint</code>를 import한다</td></tr>
+<tr><td><code>checkpoint_path</code>는 <strong>파일</strong></td><td>디렉토리가 아니라 <code>.pt</code> 파일. <code>stats.json</code>은 그 형제로 자동 로드</td></tr>
+</table>
+</div>
+
+<h3>안전 절차</h3>
+
+<ol>
+  <li><strong>teleop과 동시에 띄우지 말 것.</strong> 둘 다 같은 토픽에 퍼블리시하면 명령이
+    번갈아 나가 팔이 요동친다</li>
+  <li>먼저 <strong>토픽만 확인.</strong>
+    <code>ros2 topic echo /follower/forward_controller/commands --once</code> →
+    값이 6개인지, 관절 범위 안인지</li>
+  <li><strong>첫 실행은 짧게.</strong> 3.3초 open-loop를 기억할 것 — 이상하게 움직여도 최대 그만큼은 계속된다</li>
+  <li>관측이 0.25초 이상 끊기면 노드는 <strong>액션 발행을 멈춘다</strong>. 그런데
+    <code>forward_controller</code>는 <strong>마지막 명령을 계속 유지</strong>하므로 팔은 힘을 풀지 않고
+    그 자세로 버틴다 — 안전하지만 <em>영원히 그 상태</em>라는 뜻이다. <kbd>Ctrl-C</kbd>가 최종 안전장치</li>
+</ol>
+
+<div class="warn">
+  <span class="label">함정 6 — <code>control_rate_hz</code>는 데이터셋 <code>fps</code>와 같아야 한다</span>
+  <p>액션 chunk 안의 값들은 <strong><code>1/fps</code>초 간격이라고 가정된</strong> 궤적이다.
+  꺼내는 빈도(<code>control_rate_hz</code>)가 다르면 <strong>궤적이 시간축으로 늘어나거나 줄어든다</strong> —
+  60 Hz면 두 배 빠르게, 15 Hz면 절반 속도로 움직인다. <strong>에러는 나지 않는다.</strong></p>
+  <p>기본값 <code>30.0</code>은 <code>so101.yaml</code>의 <code>fps: 30</code>을 따라간 것이지
+  <strong>자동 연동이 아니다.</strong> <code>fps</code>를 바꿨다면 이 파라미터를 손으로 맞춰야 한다.</p>
+</div>
+
+<h2 id="troubleshoot"><span class="step">11</span>증상 → 원인 역방향표</h2>
+
+<p>파이프라인에 데이터를 걸러내는 게이트가 <strong>열 곳</strong> 있다. 상수 이름이 비슷해서 헷갈리는데,
+구분 축은 값이 아니라 <strong>버리는 단위</strong>다 — 메시지 / 순간 / 틱 / 에피소드 / 전체 중단.</p>
+
+<div class="table-wrap">
+<table>
+<tr><th>증상</th><th>원인 게이트</th><th>첫 확인</th></tr>
+<tr><td><kbd>s</kbd>를 눌렀는데 녹화가 시작 안 됨</td><td>recorder start gate (0.5 s)</td><td>로그에 찍힌 토픽 이름 → <code>ros2 topic hz &lt;그 토픽&gt;</code></td></tr>
+<tr><td>follower가 leader를 안 따라옴</td><td>teleop stale (0.25 s)</td><td><code>ros2 topic hz /leader/joint_states</code> · 컨트롤러 active 여부</td></tr>
+<tr><td>변환이 traceback으로 죽음</td><td>계약 검증 / 타임스탬프 순서</td><td><strong>메시지를 그대로 읽을 것</strong> — 토픽 없음 / 타입 불일치 / shape 불일치</td></tr>
+<tr><td><code>no frames produced (leading drops=0)</code></td><td>프레임 0개</td><td>어떤 토픽이 bag에 <strong>한 번도 없음</strong> → 수집 때 그 노드가 안 떠 있었음</td></tr>
+<tr><td><code>no frames produced (leading drops=520)</code></td><td>as-of 신선도</td><td>토픽은 왔지만 계속 stale → <code>max_age_s</code> 대비 너무 느림</td></tr>
+<tr><td><code>N/M interior ticks dropped (7.7% &gt; 2.0%)</code></td><td>interior 과다</td><td>로그의 gap 목록에 찍힌 <strong>feature 이름</strong> → 그 토픽만 손보면 됨</td></tr>
+<tr><td>변환은 됐는데 <code>dt_max_s</code>가 임계에 근접</td><td>예비 경고</td><td>다음 수집에서 넘어갈 위험. USB 대역폭·카메라 점검</td></tr>
+<tr><td>추론 중 로봇이 멈춰 있음</td><td>추론 stale (0.25 s)</td><td>세 관측 토픽 중 하나가 두절</td></tr>
+<tr><td>추론 로봇이 시연보다 <strong>빠르거나 느리다</strong></td><td>—</td><td><code>control_rate_hz</code> vs 데이터셋 <code>fps</code> (§10 함정 6)</td></tr>
+<tr><td>정책이 <strong>전반적으로 엉뚱하게</strong> 움직인다</td><td>—</td><td><code>stats.json</code>이 체크포인트 옆에 있는지 → 없으면 그것이 원인</td></tr>
+<tr><td>손목을 굽혔는데 <strong>회전</strong>한다 (에러 없음)</td><td>—</td><td>관절 순서 불일치. <code>teleop_node.JOINTS</code>와 <code>follower_controllers.yaml</code>의 <code>joints:</code> 확인</td></tr>
+<tr><td>bag 크기는 정상인데 데이터가 성기다</td><td><strong>QoS 큐 깊이</strong></td><td><strong>흔적을 안 남기는 유일한 게이트.</strong> 콜백 부하·디스크 속도 의심</td></tr>
+</table>
+</div>
+
+<div class="note">
+  <span class="label">신선도 상수 네 개 — 값이 다른 이유</span>
+  <table>
+  <tr><th>상수</th><th>값</th><th>성격</th></tr>
+  <tr><td>teleop <code>stale_timeout_s</code></td><td>0.25 s</td><td>느슨한 감시 — "완전 두절" 감지용</td></tr>
+  <tr><td>recorder <code>start_gate_max_age_s</code></td><td>0.5 s</td><td>느슨한 감시 — "살아있나"만 봄. <strong>"녹화 버튼이 안 먹는다" 전용</strong></td></tr>
+  <tr><td>grid <code>max_age_s</code> state/action</td><td>0.05 s</td><td><strong>정밀 게이트</strong> — 한 틱 지터 허용, 두 틱 불가</td></tr>
+  <tr><td>grid <code>max_age_s</code> 이미지</td><td>0.1 s</td><td><strong>정밀 게이트</strong> — 카메라가 27 Hz까지 느려질 수 있어 여유를 더 줌</td></tr>
+  </table>
+  <p style="margin-top:0.8rem">앞의 둘은 프레임 품질에 관여하지 않는다. 데이터가 이상할 때 볼 것은 뒤의 둘이다.</p>
+</div>
+
+<h2 id="unverified"><span class="step">12</span>미검증 항목 · 알려진 함정</h2>
+
+<div class="warn">
+  <span class="label">아직 실물로 확인되지 않은 것 (문서 작성 시점)</span>
+  <ul>
+    <li><code>sync_inference_node</code>가 실물로 돌아간 적이 없다</li>
+    <li>추론의 <strong>텐서화 3줄</strong>(<code>permute(2,0,1) / 255.0</code>)이 학습 때 LeRobot이 한
+      변환과 정확히 같은지 미확인. 틀리면 <strong>에러 없이</strong> 정책이 이상해진다 —
+      <code>stats.json</code> 누락과 <strong>증상이 구분되지 않는다</strong></li>
+    <li><code>0.02</code> interior 임계의 실측 근거 없음</li>
+    <li><code>cameras.launch.py</code>/<code>teleop.launch.py enable_cameras:=true</code> 파일 자체는
+      아직 실행해 본 적이 없다 — 실물 카메라 2대(<code>usb_cam</code>, 동일 파라미터로 <code>ros2 run</code> 직접
+      실행) 자체는 검증됐고(§6), launch 파일은 그 호출을 그대로 감싸는 것이라 동작할 것으로 보이지만
+      <strong>launch 경유로 실제로 뜬 적은 없다</strong></li>
+  </ul>
+  <p>확인 방법 하나: 학습 쪽 변환을 직접 읽어 비교한다.</p>
+  <pre><code>pixi run -e lerobot python -c "
+import inspect, lerobot.datasets.utils as u
+print(inspect.getsource(u.hf_transform_to_torch))"</code></pre>
+</div>
+
+<div class="table-wrap">
+<table>
+<tr><th>레포의 알려진 거친 부분</th><th>영향</th></tr>
+<tr><td><strong>README §9 진행표가 낡음</strong></td><td><code>recorder</code>·<code>inference</code>를 "예정"으로 적고 있지만 <strong>둘 다 구현되어 있다.</strong> README보다 코드를 믿을 것. README §6의 <code>lerobot-train</code> 언급도 낡음 — 학습은 <code>act/tools/train_so101.py</code></td></tr>
+<tr><td><code>src/converter/</code>가 <strong>두 역할을 겸함</strong></td><td><code>config.py</code>·<code>decoders.py</code>는 <em>계약 라이브러리</em>(recorder·inference도 씀), <code>grid/convert/cli</code>는 <em>변환 앱</em>이다. 그래서 <code>package.xml</code>에 <code>recorder → converter</code> 의존이 잡히는데 <strong>녹화가 변환을 필요로 하는 게 아니다</strong> — 처음 읽을 때 여기서 많이 헷갈린다</td></tr>
+<tr><td><code>DEFAULT_CONFIG_PATH</code>가 소스 트리 의존</td><td><code>--symlink-install</code> 없이 빌드하면 깨진다 (§3 함정 2)</td></tr>
+<tr><td><code>obs_builder</code>가 feature 개수를 하드코딩</td><td>관절 순서·shape는 config에서 읽지만 <strong>feature 3개는 고정</strong>. 카메라를 추가하면 추론 계층은 손으로 고쳐야 한다 (§13)</td></tr>
+<tr><td>bag 타임스탬프는 <strong>도착 시각</strong></td><td>recorder가 <code>raw=True</code>로 받아 <code>header.stamp</code>를 못 읽는다. 모든 토픽에 노드 수신 시각을 찍는다 — 촬영 시각이 아니다</td></tr>
+</table>
+</div>
+
+<h2 id="change"><span class="step">13</span>계약을 바꿔야 할 때의 파급</h2>
+
+<p>
+  <code>so101.yaml</code>을 고치는 것은 파이프라인 전체를 고치는 것이다. 핵심은
+  <strong>계약을 읽지 <em>않는</em> 곳이 어디인가</strong>다 — 계약 밖(수동 동기화): URDF ·
+  <code>*_controllers.yaml</code> · <code>teleop_node.JOINTS</code> · 카메라 노드 설정 ·
+  <code>control_rate_hz</code> · <code>obs_builder</code>의 feature 개수.
+</p>
+
+<div class="table-wrap">
+<table>
+<tr><th>변경</th><th>자동으로 따라오는 것</th><th>손으로 고칠 것</th><th>무효가 되는 자산</th></tr>
+<tr>
+  <td><strong>카메라 추가</strong><br>(feature 하나 추가)</td>
+  <td>recorder 구독·bag 트랙 · start gate · converter 그리드·검증 · 데이터셋 스키마 · 학습 <code>image_keys</code> <span class="verdict v-auto">자동</span></td>
+  <td>카메라 노드 · <code>obs_builder</code>(인자 3개 고정) · <code>sync_inference_node</code>(구독·stale 체크 하드코딩) · Seam 4 테스트 <span class="verdict v-manual">수동</span></td>
+  <td>데이터셋·체크포인트 <span class="verdict v-loud">재수집+재학습</span><br>(bag에 새 카메라가 안 찍혀 있음)</td>
+</tr>
+<tr>
+  <td><strong><code>fps</code> 변경</strong><br>30 → 25</td>
+  <td>그리드 틱 · 데이터셋 <code>timestamp</code> · 학습 <code>delta_timestamps</code> <span class="verdict v-auto">자동</span></td>
+  <td>추론 <code>control_rate_hz</code> <span class="verdict v-manual">수동</span> — 안 고치면 <strong>에러 없이 20% 빨라짐</strong></td>
+  <td>데이터셋·체크포인트만. <strong>bag은 재사용 가능</strong> — 재변환하면 됨</td>
+</tr>
+<tr>
+  <td><strong>이미지 shape 변경</strong></td>
+  <td>—</td>
+  <td>카메라 노드 설정</td>
+  <td><strong>bag까지 무효 → 재수집.</strong> 해상도는 퍼블리시 시점에 픽셀로 박힌다</td>
+</tr>
+<tr>
+  <td><strong>관절 순서 변경</strong></td>
+  <td>decoders 재배열 · 데이터셋·obs 벡터 <span class="verdict v-auto">자동</span></td>
+  <td><code>teleop_node.JOINTS</code> · <code>follower_controllers.yaml</code>의 <code>joints:</code> <span class="verdict v-manual">수동</span></td>
+  <td>데이터셋·체크포인트 전부 — 6차원 벡터의 <em>의미</em>가 바뀜</td>
+</tr>
+</table>
+</div>
+
+<div class="warn">
+  <span class="label">관절 순서가 가장 위험한 변경인 이유</span>
+  <p>바뀌는 것이 순서뿐이라 shape는 그대로 <code>(6,)</code>다. 타입 검사도, 계약 검증도,
+  drop 회계도 <strong>전부 통과한다.</strong> <code>teleop_node.JOINTS</code>를 안 고치면 손목 두
+  관절이 서로 바뀐 채 follower가 움직인다 — 에러 하나 없이.</p>
+  <p><strong>실전 규칙: canonical 순서는 건드리지 않는다.</strong> 게이트들은 <em>빠진 데이터</em>를
+  잡지 <em>뒤바뀐 데이터</em>는 못 잡는다.</p>
+</div>
+
+<p class="src">
+  일반 규칙: 계약 항목마다 <strong>bag보다 위인지 아래인지</strong>가 다르다.
+  <code>fps</code>·<code>max_age_s</code>는 <em>아래</em>(변환 파라미터 → 재변환으로 해결),
+  <code>shape</code>·토픽 목록은 <em>위</em>(수집 파라미터 → 재수집 필요).
+</p>
+
+<h2 id="hygiene"><span class="step">14</span>데이터 위생 · 테스트 · 파일 지도</h2>
+
+<h3>PC를 2대로 나눠 쓸 때</h3>
+
+<p>
+  bag은 raw 이미지라 크다(≈55 MB/s). <strong>bag은 수집한 PC에 두고 거기서 변환한 뒤</strong>,
+  결과 데이터셋(AV1이라 훨씬 작음)만 학습 PC로 복사한다. 변환에는 ROS가 필요하니 수집 PC 쪽이 맞다.
+</p>
+
+<pre><code>bags/       datasets/       outputs/       # 전부 gitignore. git 으로는 안 넘어간다
+# 데이터셋 복사 (학습 PC로)
+rsync -avh datasets/local/so101_pickplace/ 학습PC:~/so101-ros/datasets/local/so101_pickplace/
+# 체크포인트 복사 (추론 PC로) — .pt 와 stats.json 을 '함께'
+rsync -avh outputs/act_so101/ 추론PC:~/so101-ros/outputs/act_so101/</code></pre>
+
+<h3>테스트</h3>
+
+<pre><code># 변환기 (ROS + pixi 동시)
+source /opt/ros/jazzy/setup.bash
+export PATH="$HOME/.pixi/bin:$PATH"
+pixi run -e lerobot test-converter                  # 실제 AV1 인코딩 1건 포함
+
+# AV1 인코딩 스킵 (빠름)
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run -e lerobot \
+  python -m pytest src/converter/tests -m "not slow"
+
+# ROS 계층 전체
+colcon test --base-paths src &amp;&amp; colcon test-result --verbose</code></pre>
+
+<p class="src">
+  <code>PYTEST_DISABLE_PLUGIN_AUTOLOAD=1</code>이 필요한 이유: ROS의 <code>PYTHONPATH</code>가
+  ROS 자신의 pytest 플러그인(<code>launch_testing</code>)을 광고하는데 그 의존성(<code>lark</code>)이
+  pixi 환경에 없다. <span class="path">tests/</span>(복수)가 pytest 스위트,
+  <span class="path">test/</span>(단수)는 colcon이 돌리는 ament lint 보일러플레이트다.
+</p>
+
+<h3>어디를 고칠 것인가 — 파일 지도</h3>
+
+<div class="table-wrap">
+<table>
+<tr><th>하고 싶은 일</th><th>파일</th></tr>
+<tr><td>토픽·관절순서·fps·shape 변경</td><td><span class="path">src/converter/config/so101.yaml</span> ← <strong>계약. 여기서 출발</strong></td></tr>
+<tr><td>태스크 설명 문구 변경</td><td>같은 파일의 <code>task:</code> (데이터셋 프레임에 들어간다)</td></tr>
+<tr><td>relay 주기·stale 조정</td><td><span class="path">src/teleop/teleop/teleop_node.py</span> · <span class="path">src/bringup/launch/teleop.launch.py</span></td></tr>
+<tr><td>컨트롤러 주기·PID·관절 목록</td><td><span class="path">src/bringup/config/ros2_control/*.yaml</span> · <span class="path">src/so101_description/urdf/ros2_control/so101_ros2_control.xacro</span></td></tr>
+<tr><td>카메라 드라이버·디바이스·fps</td><td><span class="path">src/bringup/launch/cameras.launch.py</span> (토픽·인코딩·크기는 계약에서 유도 — 여기 없음)</td></tr>
+<tr><td>카메라 TF 프레임 위치</td><td><span class="path">src/so101_description/urdf/so101_cameras.xacro</span> (이미지 아님 — 프레임만)</td></tr>
+<tr><td>수집 저장 경로·start gate</td><td><span class="path">src/recorder/recorder/episode_recorder_node.py</span> (노드 파라미터로도 가능)</td></tr>
+<tr><td>drop 임계·그리드 로직</td><td><span class="path">src/converter/converter/grid.py</span> · CLI 플래그</td></tr>
+<tr><td>ACT 하이퍼파라미터</td><td><span class="path">act/act/config.py</span> (<code>ACTConfig</code>) · <span class="path">act/tools/train_so101.py</span></td></tr>
+<tr><td>추론 주기·stale·토픽</td><td><span class="path">src/inference/inference/sync_inference_node.py</span> (전부 노드 파라미터)</td></tr>
+</table>
+</div>
+
+<h3>진행 순서 요약 — 처음 받았다면 이 순서로</h3>
+
+<div class="table-wrap">
+<table>
+<tr><th>#</th><th>할 일</th><th>완료 기준</th></tr>
+<tr><td>1</td><td>설치 + 빌드 (§3)</td><td><code>pixi run -e lerobot lerobot-info</code>가 GPU를 인식</td></tr>
+<tr><td>2</td><td>모터 셋업 + 캘리브 (§4)</td><td>캘리브 폴더 생성 + 백업</td></tr>
+<tr><td>3</td><td>mock teleop → 실물 teleop (§5)</td><td>leader를 움직이면 follower가 따라온다</td></tr>
+<tr><td>4</td><td>카메라 배선 (§6)</td><td>두 토픽이 <code>rgb8</code>·640×480·≥27 Hz로 <strong>동시에</strong> 흐른다</td></tr>
+<tr><td>5</td><td><strong>스모크 수집 2–3개</strong> (§7)</td><td><code>metadata.yaml</code> 존재 · 일부러 실패시킨 start gate 로그 확인</td></tr>
+<tr><td>6</td><td>변환 + 장부 읽기 (§8)</td><td>종료코드 0 · <code>interior</code>가 2% 이내 · <code>max_dt</code> 여유 확인</td></tr>
+<tr><td>7</td><td>학습 스모크 200스텝 (§9)</td><td><code>.pt</code> + <code>stats.json</code> 생성 · loss 하강</td></tr>
+<tr><td>8</td><td>본 수집 50 + 본 학습</td><td>—</td></tr>
+<tr><td>9</td><td>closed-loop 추론 (§10)</td><td>teleop 끈 상태로 팔이 태스크를 시도한다</td></tr>
+</table>
+</div>
+
+<div class="key">
+  <span class="label">5번에서 가장 많이 배운다</span>
+  <p>스모크 수집 2–3개가 미검증 항목 넷을 한 번에 턴다 — 실물 teleop, recorder, bag 내용,
+  변환 drop율. 여기서 나오는 숫자(카메라 실제 Hz, <code>dt_max_s</code>, interior drop 분포)가
+  이 문서의 여러 추정치를 실측으로 바꾼다. <strong>수집 규모를 늘리기 전에 이 숫자를 먼저 볼 것.</strong></p>
+</div>
+
+<footer>
+  <p>
+    <strong>더 깊은 설계 근거가 필요하면:</strong> 브랜치 <code>docs/teach-workspace</code>의
+    <span class="path">docs/teach/</span>에 레슨 7개와 참고 문서 3개(워크스페이스 지도 ·
+    게이트 총람 · 용어집)가 있다. 이 문서는 그 자료에서 <strong>실행에 필요한 부분만</strong> 뽑은 것이다.
+  </p>
+  <p>
+    이슈 트래커: <a href="https://github.com/dsafjk0024/so101-ros/issues">github.com/dsafjk0024/so101-ros/issues</a>
+    — 카메라 토픽 배선 <code>#17</code> · recorder+스모크 <code>#19</code> · 본50+ACT <code>#20</code> ·
+    closed-loop 평가 <code>#21</code> · handeye+TF <code>#22</code>(연기, ACT에 불필요).
+  </p>
+</footer>
+
+</body>
+</html>

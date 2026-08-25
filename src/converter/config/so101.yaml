@@ -1,0 +1,48 @@
+# SO-101 rosbag -> LeRobot v3.0 conversion contract.
+#
+# This file is the single source of truth for the dataset contract: joint order,
+# feature keys, shapes, fps, and which bag topic feeds which feature. The
+# recorder (#19) must record exactly these topics and types.
+#
+# max_age_s is the as-of freshness window: at a 30Hz grid tick, a feature whose
+# newest sample is older than this is treated as missing and the tick is dropped.
+
+robot_type: so101
+fps: 30
+task: "Pick up the cube and place it in the bin."
+repo_id: local/so101_pickplace
+
+joint_names: &joints
+  - shoulder_pan
+  - shoulder_lift
+  - elbow_flex
+  - wrist_flex
+  - wrist_roll
+  - gripper
+
+features:
+  - key: observation.state
+    topic: /follower/joint_states
+    msg_type: sensor_msgs/msg/JointState
+    max_age_s: 0.05
+    names: *joints
+
+  # Absolute joint position command the follower was told to hold. Published by
+  # the teleop relay (src/teleop/teleop/teleop_node.py) in canonical order.
+  - key: action
+    topic: /follower/forward_controller/commands
+    msg_type: std_msgs/msg/Float64MultiArray
+    max_age_s: 0.05
+    names: *joints
+
+  - key: observation.images.wrist
+    topic: /follower/camera/wrist/image_raw
+    msg_type: sensor_msgs/msg/Image
+    max_age_s: 0.1
+    shape: [480, 640, 3]
+
+  - key: observation.images.top
+    topic: /follower/camera/top/image_raw
+    msg_type: sensor_msgs/msg/Image
+    max_age_s: 0.1
+    shape: [480, 640, 3]

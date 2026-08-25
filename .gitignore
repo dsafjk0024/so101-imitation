@@ -1,0 +1,31 @@
+# ROS 2 / colcon
+build/
+install/
+log/
+
+# pixi (LeRobot env — regenerated from pixi.toml/pixi.lock)
+.pixi/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# pipeline data artifacts (kept local, not committed)
+bags/*
+datasets/*
+outputs/*
+!bags/.gitkeep
+!datasets/.gitkeep
+!outputs/.gitkeep
+
+# upstream reference repos (nested git checkouts, reference-only)
+upstream/
+
+# macOS
+.DS_Store
+
+# Sibling xArm/Allegro FBC work: 3.8GB of JAX checkpoints, and 13 files
+# over GitHub's 100MB per-file limit, so this cannot be committed as-is.
+act/fbc/

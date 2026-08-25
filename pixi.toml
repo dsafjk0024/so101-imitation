@@ -1,0 +1,43 @@
+# Training / conversion / inference environment (Python 3.12 + LeRobot 0.5.1).
+# The ROS 2 layer is the system jazzy install plus colcon — deliberately separate,
+# so a version bump on one side cannot break the other.
+[workspace]
+name = "so101-imitation"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[feature.lerobot.dependencies]
+python = "3.12.*"
+ffmpeg = "*"
+numpy = ">=2.0,<2.3"
+
+# pytest and matplotlib come from pypi, not conda: the conda builds pull
+# packaging 26.x and pin it for the pypi solve, which lerobot 0.5.1
+# (packaging>=24.2,<26.0) then rejects.
+[feature.lerobot.pypi-dependencies]
+# The feetech extra pulls scservo_sdk, needed by SO-101's FeetechMotorsBus for
+# the native lerobot calibration/teleoperation commands on real hardware.
+lerobot = { version = "==0.5.1", extras = ["feetech"] }
+pytest = "*"
+matplotlib = "*"
+act = { path = "act", editable = true }
+
+[feature.lerobot.tasks]
+lerobot-info = "lerobot-info"
+# No PYTHONPATH override anywhere in here: it would clobber the ROS entry that
+# the converter needs for rosbag2_py. Each package's pytest.ini puts itself on
+# sys.path instead.
+#
+# Plugin autoload is off because the ROS PYTHONPATH advertises ROS's own pytest
+# plugins (launch_testing), whose dependencies are not in this environment.
+test-converter = { cmd = "python -m pytest src/converter/tests -v", env = { PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1" } }
+test-inference = { cmd = "python -m pytest src/inference/tests -v", env = { PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1" } }
+test-recorder = { cmd = "python -m pytest src/recorder/tests -v", env = { PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1" } }
+test-act = { cmd = "python -m pytest act/tests -v", env = { PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1" } }
+
+train-act = { cmd = "python tools/train_so101.py", cwd = "act" }
+train-fbc = { cmd = "python tools/train_fbc_so101.py", cwd = "act" }
+
+[environments]
+lerobot = ["lerobot"]

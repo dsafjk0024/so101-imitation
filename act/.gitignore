@@ -1,0 +1,12 @@
+# local dataset artifacts (large, kept local, not committed)
+data/
+outputs/
+*.pkl
+*.npy
+*.pt
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/

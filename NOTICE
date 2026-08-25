@@ -1,0 +1,23 @@
+so101-imitation
+Copyright 2026 Jusung Kim
+
+This product includes software developed by third parties, vendored under
+src/vendor/ so that the workspace builds as a unit. Their licenses and
+copyright notices are preserved in place:
+
+* src/vendor/feetech_ros2_driver
+  ros2_control hardware interface for Feetech STS3215 servos.
+  Copyright (c) 2024 Jafar Uruç. BSD 3-Clause License.
+  https://github.com/JafarAbdi/feetech_ros2_driver
+
+* src/vendor/so101_description
+  URDF/Xacro, meshes and RViz configuration for the SO-101 arm.
+  Maintained by Dmitri Manajev. Apache License 2.0.
+
+Neither vendored package was modified beyond what is required to build inside
+this workspace; any change is visible in this repository's git history.
+
+The ACT policy under act/ is a from-scratch PyTorch reimplementation of the
+Action Chunking Transformer, decoupled from HuggingFace LeRobot's version so
+that one framework and one checkpoint format serve both training and the
+deployed inference node.
