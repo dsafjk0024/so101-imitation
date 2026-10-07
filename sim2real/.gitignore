@@ -1,0 +1,13 @@
+# Run artifacts (datasets, checkpoints, logs) stay local.
+outputs/
+data/
+exp/
+sweep/
+*.pkl
+*.log
+
+# Machine-specific: printed targets are regenerated, leader/follower motor
+# calibration lives in ~/.cache/huggingface/lerobot.
+calibration/targets/
+calibration/teleoperators/
+calibration/**/*.before_*

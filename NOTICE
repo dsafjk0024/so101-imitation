@@ -21,3 +21,9 @@ The ACT policy under act/ is a from-scratch PyTorch reimplementation of the
 Action Chunking Transformer, decoupled from HuggingFace LeRobot's version so
 that one framework and one checkpoint format serve both training and the
 deployed inference node.
+
+The sim2real/ directory is licensed separately under the MIT License (see
+sim2real/LICENSE). It contains the Isaac Lab StackCube environment and the
+FBC/DBC/DPPO/ResiP agents written by Seongsu Kim, and files adapted from the
+Sim-to-Real SO-101 Workshop (Apache License 2.0), which keep their original
+SPDX headers.
