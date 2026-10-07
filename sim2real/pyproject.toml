@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools", "wheel", "toml"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "so101"
+version = "0.1.0"
+description = "SO-101 StackCube sim-to-real: Isaac Lab environment, calibration, synthetic data, students and real deployment."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Seongsu Kim" },
+    { name = "Jusung Kim" },
+]
+dependencies = [
+    "psutil",
+]
+
+[project.optional-dependencies]
+learning = [
+    "absl-py",
+    "flax",
+    "jax",
+    "ml-collections",
+    "numpy",
+    "optax",
+    "tqdm",
+    "wandb",
+]
+real = [
+    "draccus",
+    # SO-101 motors use the optional Feetech transport.  Plain `lerobot`
+    # installs the robot classes but omits the `scservo_sdk` module needed at
+    # connection time, so request the hardware extra explicitly.
+    "lerobot[feetech]",
+    "matplotlib",
+    "numpy",
+    # cv2.aruco is present in the headless wheel. Preview windows use
+    # matplotlib because lerobot itself depends on headless OpenCV.
+    "opencv-python-headless",
+    "pynput",
+    "pyyaml",
+    "rerun-sdk",
+    "torch",
+]
+
+[project.scripts]
+so101-control = "so101.real.control:main"
+so101-manual-control = "so101.real.manual_control:main"
+so101-calibration-stats = "so101.real.calibration_stats:main"
+so101-check-calibration = "so101.real.check_calibration:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+so101 = ["assets/usd/**/*.usd", "real/*.json", "real/sample_calibrations/*.json"]

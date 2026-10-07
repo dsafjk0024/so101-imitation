@@ -1,0 +1,197 @@
+"""A minimal SO-101 scene with a fixed 50 cm square tabletop."""
+
+from __future__ import annotations
+
+import logging
+
+import isaaclab.sim as sim_utils
+from isaaclab.assets import AssetBaseCfg
+from isaaclab.scene import InteractiveSceneCfg
+from isaaclab.sensors import CameraCfg
+from isaaclab.utils import configclass
+
+from so101.assets import SO101_CAMERA_CFG, SO101_CFG
+from so101.camera_calibration import DEFAULT_CALIBRATION_DIR, try_load_calibration
+
+logger = logging.getLogger(__name__)
+
+# The physical table is 70 cm deep along X and 120 cm wide along Y.
+TABLETOP_LENGTH = 0.70
+TABLETOP_WIDTH = 1.20
+TABLETOP_THICKNESS = 0.04
+# The SO-101 USD root is at z=0, while the lowest point of its base mesh is
+# 30.081 mm above that origin.  Put the tabletop surface at the mesh bottom so
+# the robot is visually and physically supported without moving its root pose.
+ROBOT_BASE_BOTTOM_Z = 0.0300814467
+# Root placement used by the calibrated physical layout.  The base-frame
+# centre is then at approximately (0.0, 0.4175) m because the USD base has an
+# internal XY offset.
+ROBOT_ROOT_POS = (0.0377, 0.3967, 0.0)
+
+CAMERA_WIDTH = 640
+CAMERA_HEIGHT = 480
+
+# Poses are expressed in the ROS camera convention (+Z along the optical axis,
+# +Y down the image rows), which is what cv2.solvePnP and cv2.calibrateHandEye
+# return.  Matching the convention here means a measured pose drops straight in
+# with no conversion layer to get a sign wrong in -- the most common way this
+# kind of alignment fails.
+#
+# These values are only a fallback for running before the cameras have been
+# calibrated.  They are the historical hand-picked poses, converted from the
+# OpenGL convention they used to be written in, so the fallback renders exactly
+# as it always did.  calibration/cameras/*.yaml overrides them.
+# Previous local wrist-camera setup: original USD mount and 180-degree roll.
+WRIST_CAMERA_OFFSET_POS = (-0.005, -0.060, -0.062)
+WRIST_CAMERA_OFFSET_ROT = (0.0, 0.0, 0.9238795, 0.3826834)
+EXTERNAL_CAMERA_POS = (0.62, -0.50, 0.42)
+EXTERNAL_CAMERA_ROT = (0.4737144, -0.8254465, -0.2662452, 0.1527951)
+
+# Isaac derives fx = width * focal_length / horizontal_aperture, and leaves
+# horizontal_aperture at 20.955 cm.  13.5 cm therefore means fx = 412.3 px and
+# a 75.7 deg horizontal field of view -- a hand-picked value, not a measured
+# one, which is precisely what calibration replaces.
+DEFAULT_FOCAL_LENGTH = 13.5
+
+
+def camera_cfg(
+    prim_path: str,
+    pos: tuple[float, float, float],
+    rot: tuple[float, float, float, float],
+    focal_length: float = DEFAULT_FOCAL_LENGTH,
+) -> CameraCfg:
+    """Create a 640x480 RGB-D pinhole camera in the ROS convention.
+
+    ``focal_length`` is per camera: the wrist and front cameras are different
+    lenses, so sharing one value -- as this factory used to -- cannot be right
+    for both.
+    """
+    return CameraCfg(
+        prim_path=prim_path,
+        update_period=0.0,
+        height=CAMERA_HEIGHT,
+        width=CAMERA_WIDTH,
+        data_types=["rgb", "distance_to_image_plane"],
+        spawn=sim_utils.PinholeCameraCfg(
+            projection_type="pinhole",
+            focal_length=focal_length,
+            focus_distance=0.25,
+        ),
+        offset=CameraCfg.OffsetCfg(pos=pos, rot=rot, convention="ros"),
+    )
+
+
+def calibrated_camera_cfg(
+    name: str,
+    prim_path: str,
+    fallback_pos: tuple[float, float, float],
+    fallback_rot: tuple[float, float, float, float],
+) -> CameraCfg:
+    """Build a camera cfg from ``calibration/cameras/<name>.yaml`` if present.
+
+    Falling back rather than failing keeps the scene runnable before the
+    on-site calibration session, but the warning is deliberately loud: an
+    uncalibrated camera will not match the real one, and silently rendering
+    the wrong viewpoint is the failure this whole exercise exists to prevent.
+    """
+    calibration = try_load_calibration(name)
+    if calibration is None:
+        logger.warning(
+            "camera %r has no calibration in %s; falling back to the "
+            "hand-picked pose and focal length, which will NOT match the real "
+            "camera",
+            name,
+            DEFAULT_CALIBRATION_DIR,
+        )
+        return camera_cfg(prim_path, fallback_pos, fallback_rot)
+
+    if calibration.resolution != (CAMERA_WIDTH, CAMERA_HEIGHT):
+        raise ValueError(
+            f"camera {name!r} is calibrated for {calibration.resolution} but the "
+            f"scene renders {(CAMERA_WIDTH, CAMERA_HEIGHT)}; recalibrate at the "
+            "resolution you run at"
+        )
+
+    pos, rot = fallback_pos, fallback_rot
+    if calibration.extrinsic is not None:
+        pos = calibration.extrinsic.pos
+        rot = calibration.extrinsic.quat_wxyz
+    else:
+        logger.warning(
+            "camera %r has intrinsics but no extrinsic yet; keeping the "
+            "fallback pose",
+            name,
+        )
+    return camera_cfg(prim_path, pos, rot, calibration.isaac_focal_length())
+
+
+
+@configclass
+class SO101TabletopSceneCfg(InteractiveSceneCfg):
+    """Robot at the origin, mounted on the midpoint of a tabletop edge.
+
+    The tabletop's top surface touches the bottom of the robot base mesh at
+    z=0.030081 m. It spans x=[0.0, 0.7] and y=[0.0, 1.2]. Omitting rigid-body
+    properties makes it a static collider: it cannot fall or move.
+    """
+
+    tabletop = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Tabletop",
+        spawn=sim_utils.CuboidCfg(
+            size=(TABLETOP_LENGTH, TABLETOP_WIDTH, TABLETOP_THICKNESS),
+            collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=True),
+            visual_material=sim_utils.PreviewSurfaceCfg(
+                # Slightly reflective black-painted tabletop. It remains
+                # distinct from the robot's true-black printed parts.
+                diffuse_color=(0.012, 0.012, 0.012),
+                roughness=0.42,
+                metallic=0.0,
+            ),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(
+            pos=(
+                TABLETOP_LENGTH / 2.0,
+                TABLETOP_WIDTH / 2.0,
+                ROBOT_BASE_BOTTOM_Z - TABLETOP_THICKNESS / 2.0,
+            ),
+        ),
+    )
+
+    robot = SO101_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+
+    key_light = AssetBaseCfg(
+        prim_path="/World/KeyLight",
+        spawn=sim_utils.DistantLightCfg(
+            color=(1.0, 0.96, 0.90),
+            intensity=2500.0,
+            angle=25.0,
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(rot=(0.9239, 0.2209, -0.2209, 0.2209)),
+    )
+
+    fill_light = AssetBaseCfg(
+        prim_path="/World/FillLight",
+        spawn=sim_utils.DomeLightCfg(
+            color=(0.75, 0.82, 1.0),
+            intensity=700.0,
+        ),
+    )
+
+
+@configclass
+class SO101VisualTabletopSceneCfg(SO101TabletopSceneCfg):
+    """Camera-equipped robot with wrist and external RGB-D sensors."""
+
+    robot = SO101_CAMERA_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+    wrist_camera = calibrated_camera_cfg(
+        "wrist",
+        "{ENV_REGEX_NS}/Robot/gripper/gripper_cam",
+        WRIST_CAMERA_OFFSET_POS,
+        WRIST_CAMERA_OFFSET_ROT,
+    )
+    external_camera = calibrated_camera_cfg(
+        "front",
+        "{ENV_REGEX_NS}/ExternalCamera",
+        EXTERNAL_CAMERA_POS,
+        EXTERNAL_CAMERA_ROT,
+    )

@@ -188,6 +188,23 @@ Dataset features (LeRobot v3.0, fps = 30):
 `observation.state` (6) · `observation.images.wrist` (480, 640, 3) ·
 `observation.images.top` (480, 640, 3) · `action` (6, absolute joint positions).
 
+## Sim-to-real (Isaac Lab)
+
+[`sim2real/`](sim2real/) is a second route to the same arm. Instead of learning
+from real teleoperation only, it:
+
+- trains a state-based StackCube teacher in Isaac Lab (behaviour cloning plus
+  ResiP residual RL)
+- renders the teacher's rollouts with domain randomization
+- co-trains an image Diffusion Policy on those synthetic demos plus 40 real ones,
+  then deploys it on the real arm
+
+It also contains the calibration tooling that makes the simulated and real rigs
+agree: camera intrinsics and mounts, joint mapping, fingertip touch calibration,
+cube colors and exposure. It is a separate Python package with its own
+environments; see [`sim2real/README.md`](sim2real/README.md) and
+[`sim2real/docs/results.md`](sim2real/docs/results.md).
+
 ## Layout
 
 ```
@@ -202,6 +219,7 @@ so101-imitation/
 ├── act/                   ACT + flow-matching policies, trainers, tests
 ├── scripts/               environment setup and camera / dataset inspection helpers
 ├── docs/team-guide.html   full walkthrough (Korean)
+├── sim2real/              Isaac Lab StackCube sim-to-real (separate package, MIT)
 └── pixi.toml              LeRobot 0.5.1 environment
 ```
 
